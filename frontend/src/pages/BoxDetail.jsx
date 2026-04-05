@@ -3,6 +3,31 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 
+const RARITY_STYLES = {
+  common:    { background: "#9e9e9e", color: "#fff" },
+  rare:      { background: "#1565c0", color: "#fff" },
+  epic:      { background: "#6a1b9a", color: "#fff" },
+  legendary: { background: "#f9a825", color: "#000" },
+};
+
+function RarityBadge({ rarity }) {
+  const style = RARITY_STYLES[rarity] || RARITY_STYLES.common;
+  return (
+    <span style={{
+      ...style,
+      padding: "0.15rem 0.45rem",
+      borderRadius: "999px",
+      fontSize: "0.68rem",
+      fontWeight: 600,
+      textTransform: "uppercase",
+      marginLeft: "0.4rem",
+      verticalAlign: "middle",
+    }}>
+      {rarity === "legendary" ? `✨ ${rarity}` : rarity}
+    </span>
+  );
+}
+
 export default function BoxDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -10,7 +35,7 @@ export default function BoxDetail() {
   const [box, setBox] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pulling, setPulling] = useState(false);
-  const [result, setResult] = useState(null);
+  const [results, setResults] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -20,13 +45,18 @@ export default function BoxDetail() {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const handlePull = async () => {
+  const handlePull = async (count = 1) => {
     setError("");
-    setResult(null);
+    setResults([]);
     setPulling(true);
     try {
-      const { data } = await api.post(`/api/boxes/${id}/pull`);
-      setResult(data);
+      if (count === 1) {
+        const { data } = await api.post(`/api/boxes/${id}/pull`);
+        setResults([data.item]);
+      } else {
+        const { data } = await api.post(`/api/boxes/${id}/pull-multi`, { count });
+        setResults(data.items);
+      }
       await refreshUser();
     } catch (err) {
       setError(err.response?.data?.error || "Pull failed");
@@ -39,6 +69,8 @@ export default function BoxDetail() {
   if (!box) return null;
 
   const totalProb = box.items.reduce((s, i) => s + i.pull_probability, 0);
+  const canAfford = (n) => (user?.deposit ?? 0) >= box.cost * n;
+  const hasStock = box.items.length > 0;
 
   return (
     <div className="page">
@@ -56,20 +88,35 @@ export default function BoxDetail() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {result && (
+      {results.length > 0 && (
         <div className="alert alert-success">
-          🎉 You got: <strong>{result.item.name}</strong> ({result.item.points} pts)
-          {result.item.description && <> — {result.item.description}</>}
+          🎉 {results.length === 1 ? (
+            <>You got: <strong>{results[0].name}</strong> ({results[0].points} pts)</>
+          ) : (
+            <>
+              You got {results.length} items:
+              <ul style={{ margin: "0.5rem 0 0 1.2rem" }}>
+                {results.map((item, i) => (
+                  <li key={i}><strong>{item.name}</strong> ({item.points} pts)</li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
 
-      <button
-        className="btn btn-primary mb-2"
-        onClick={handlePull}
-        disabled={pulling || (user?.deposit ?? 0) < box.cost || box.items.length === 0}
-      >
-        {pulling ? "Opening…" : `Open Box (${box.cost} coins)`}
-      </button>
+      <div className="flex gap-1 mb-2 wrap">
+        {[1, 3, 5, 10].map((n) => (
+          <button
+            key={n}
+            className={n === 1 ? "btn btn-primary" : "btn btn-secondary"}
+            onClick={() => handlePull(n)}
+            disabled={pulling || !canAfford(n) || !hasStock}
+          >
+            {pulling ? "Opening…" : `Open ×${n} (${box.cost * n} coins)`}
+          </button>
+        ))}
+      </div>
 
       <h2>Contents</h2>
       {box.items.length === 0 ? (
@@ -91,7 +138,10 @@ export default function BoxDetail() {
                 const pct = totalProb > 0 ? ((item.pull_probability / totalProb) * 100).toFixed(1) : 0;
                 return (
                   <tr key={item.id}>
-                    <td><strong>{item.item_name}</strong></td>
+                    <td>
+                      <strong>{item.item_name}</strong>
+                      {item.rarity && <RarityBadge rarity={item.rarity} />}
+                    </td>
                     <td className="text-muted">{item.description || "—"}</td>
                     <td>{item.points}</td>
                     <td>{item.stock}</td>

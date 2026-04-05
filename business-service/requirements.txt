@@ -3,3 +3,4 @@ flask-cors==4.0.1
 psycopg2-binary==2.9.9
 PyJWT==2.8.0
 prometheus-flask-exporter==0.23.1
+redis==5.0.4

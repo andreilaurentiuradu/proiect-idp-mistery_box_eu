@@ -42,16 +42,19 @@ CREATE TABLE user_items (
 );
 
 CREATE TABLE "order" (
-    id      VARCHAR PRIMARY KEY DEFAULT uuid_generate_v4()::varchar,
-    user_id VARCHAR NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-    box_id  VARCHAR REFERENCES box(id) ON DELETE SET NULL,
-    item_id VARCHAR REFERENCES item(id) ON DELETE SET NULL,
-    amount  INTEGER NOT NULL,
-    status  VARCHAR NOT NULL DEFAULT 'completed'
+    id         VARCHAR PRIMARY KEY DEFAULT uuid_generate_v4()::varchar,
+    user_id    VARCHAR NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    box_id     VARCHAR REFERENCES box(id) ON DELETE SET NULL,
+    item_id    VARCHAR REFERENCES item(id) ON DELETE SET NULL,
+    amount     INTEGER NOT NULL,
+    status     VARCHAR NOT NULL DEFAULT 'completed',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Default admin user: admin@admin.com / admin123
+-- NOTE: this is a temporary placeholder hash; start.sh replaces it at runtime
+-- with a correctly computed bcrypt hash for "admin123".
 INSERT INTO "user" (mail, password, role, deposit)
 VALUES ('admin@admin.com',
-        '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
+        '$2b$12$PLACEHOLDER000000000000000000000000000000000000000000000',
         'admin', 10000);

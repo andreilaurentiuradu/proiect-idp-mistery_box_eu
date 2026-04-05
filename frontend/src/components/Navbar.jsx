@@ -18,6 +18,8 @@ export default function Navbar() {
           <Link to="/">Boxes</Link>
           <Link to="/inventory">Inventory</Link>
           <Link to="/wallet">Wallet</Link>
+          <Link to="/history">History</Link>
+          <Link to="/leaderboard">Leaderboard</Link>
           {(user?.role === "creator" || user?.role === "admin") && (
             <Link to="/creator">Creator</Link>
           )}

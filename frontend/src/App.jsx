@@ -10,6 +10,8 @@ import Inventory from "./pages/Inventory";
 import AdminPanel from "./pages/AdminPanel";
 import CreatorPanel from "./pages/CreatorPanel";
 import Wallet from "./pages/Wallet";
+import History from "./pages/History";
+import Leaderboard from "./pages/Leaderboard";
 
 export default function App() {
   const { user } = useAuth();
@@ -26,6 +28,8 @@ export default function App() {
           <Route path="/boxes/:id" element={<BoxDetail />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/wallet" element={<Wallet />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
         </Route>
 
         <Route element={<ProtectedRoute roles={["creator", "admin"]} />}>

@@ -1,0 +1,426 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "description": "MysteryBox – HTTP traffic, latency, errors, system resources, DB & cache",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100, "title": "🌐  Traffic Overview", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 50 },
+            { "color": "red", "value": 200 }
+          ]},
+          "unit": "reqps", "mappings": []
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1, "title": "Total RPS",
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "sum(rate(flask_http_request_total[1m]))", "legendFormat": "RPS" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 5 }
+          ]},
+          "unit": "percent", "min": 0, "max": 100
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2, "title": "Error Rate (5xx)",
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "sum(rate(flask_http_request_total{status=~\"5..\"}[1m])) / sum(rate(flask_http_request_total[1m])) * 100 or vector(0)", "legendFormat": "Error %" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.3 },
+            { "color": "red", "value": 1 }
+          ]},
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3, "title": "P95 Latency (all services)",
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by(le) (rate(flask_http_request_duration_seconds_bucket[1m])))", "legendFormat": "p95" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.1 },
+            { "color": "red", "value": 0.5 }
+          ]},
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4, "title": "P99 Latency (all services)",
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.99, sum by(le) (rate(flask_http_request_duration_seconds_bucket[1m])))", "legendFormat": "p99" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "green", "value": 1 }
+          ]},
+          "mappings": [
+            { "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } }, "type": "value" }
+          ]
+        }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
+      "id": 5, "title": "Service Health",
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "up{job=\"auth-service\"}", "legendFormat": "auth-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "up{job=\"business-service\"}", "legendFormat": "business-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "up{job=\"payments-service\"}", "legendFormat": "payments-service" }
+      ],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "reqps", "custom": { "lineWidth": 2, "fillOpacity": 10 } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "id": 6, "title": "Request Rate per Service",
+      "options": { "legend": { "calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(flask_http_request_total{job=\"auth-service\"}[1m])", "legendFormat": "auth – {{method}} {{path}} {{status}}" },
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(flask_http_request_total{job=\"business-service\"}[1m])", "legendFormat": "business – {{method}} {{path}} {{status}}" },
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(flask_http_request_total{job=\"payments-service\"}[1m])", "legendFormat": "payments – {{method}} {{path}} {{status}}" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "percentunit", "min": 0, "max": 1, "custom": { "lineWidth": 2, "fillOpacity": 10 } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "error rate" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "id": 7, "title": "Error Rate per Service (4xx + 5xx)",
+      "options": { "legend": { "calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "sum(rate(flask_http_request_total{job=\"auth-service\",status=~\"[45]..\"}[1m])) / sum(rate(flask_http_request_total{job=\"auth-service\"}[1m]))", "legendFormat": "auth errors" },
+        { "datasource": { "uid": "prometheus" }, "expr": "sum(rate(flask_http_request_total{job=\"business-service\",status=~\"[45]..\"}[1m])) / sum(rate(flask_http_request_total{job=\"business-service\"}[1m]))", "legendFormat": "business errors" },
+        { "datasource": { "uid": "prometheus" }, "expr": "sum(rate(flask_http_request_total{job=\"payments-service\",status=~\"[45]..\"}[1m])) / sum(rate(flask_http_request_total{job=\"payments-service\"}[1m]))", "legendFormat": "payments errors" }
+      ],
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 101, "title": "⏱  Latency Breakdown", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 },
+      "id": 8, "title": "auth-service – Latency P50 / P95 / P99",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.50, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"auth-service\"}[1m])))", "legendFormat": "p50" },
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"auth-service\"}[1m])))", "legendFormat": "p95" },
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.99, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"auth-service\"}[1m])))", "legendFormat": "p99" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 },
+      "id": 9, "title": "business-service – Latency P50 / P95 / P99",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.50, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"business-service\"}[1m])))", "legendFormat": "p50" },
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"business-service\"}[1m])))", "legendFormat": "p95" },
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.99, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"business-service\"}[1m])))", "legendFormat": "p99" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
+      "id": 10, "title": "payments-service – Latency P50 / P95 / P99",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.50, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"payments-service\"}[1m])))", "legendFormat": "p50" },
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.95, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"payments-service\"}[1m])))", "legendFormat": "p95" },
+        { "datasource": { "uid": "prometheus" }, "expr": "histogram_quantile(0.99, sum by(le) (rate(flask_http_request_duration_seconds_bucket{job=\"payments-service\"}[1m])))", "legendFormat": "p99" }
+      ],
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 102, "title": "🖥  System Resources", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "id": 11, "title": "Memory RSS per Service",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "process_resident_memory_bytes{job=\"auth-service\"}", "legendFormat": "auth-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_resident_memory_bytes{job=\"business-service\"}", "legendFormat": "business-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_resident_memory_bytes{job=\"payments-service\"}", "legendFormat": "payments-service" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "percentunit", "min": 0, "custom": { "lineWidth": 2, "fillOpacity": 10 } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "id": 12, "title": "CPU Usage per Service",
+      "options": { "legend": { "calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(process_cpu_seconds_total{job=\"auth-service\"}[1m])", "legendFormat": "auth-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(process_cpu_seconds_total{job=\"business-service\"}[1m])", "legendFormat": "business-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(process_cpu_seconds_total{job=\"payments-service\"}[1m])", "legendFormat": "payments-service" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short", "custom": { "lineWidth": 1 } }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 31 },
+      "id": 13, "title": "Open File Descriptors",
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "process_open_fds{job=\"auth-service\"}", "legendFormat": "auth-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_open_fds{job=\"business-service\"}", "legendFormat": "business-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_open_fds{job=\"payments-service\"}", "legendFormat": "payments-service" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short", "custom": { "lineWidth": 1 } }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 31 },
+      "id": 14, "title": "Virtual Memory Size",
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "process_virtual_memory_bytes{job=\"auth-service\"}", "legendFormat": "auth-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_virtual_memory_bytes{job=\"business-service\"}", "legendFormat": "business-service" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_virtual_memory_bytes{job=\"payments-service\"}", "legendFormat": "payments-service" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Threads" }] }
+        ]
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 31 },
+      "id": 15, "title": "Threads per Service",
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "process_max_fds{job=\"auth-service\"}", "legendFormat": "auth-service max FDs" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_max_fds{job=\"business-service\"}", "legendFormat": "business-service max FDs" },
+        { "datasource": { "uid": "prometheus" }, "expr": "process_max_fds{job=\"payments-service\"}", "legendFormat": "payments-service max FDs" }
+      ],
+      "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 },
+      "id": 103, "title": "🗄  Database (PostgreSQL)", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 90 }
+          ]}, "unit": "short", "mappings": [] }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 38 },
+      "id": 16, "title": "Active Connections",
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "pg_stat_activity_count{job=\"postgres-exporter\",state=\"active\"}", "legendFormat": "active" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 80 }] } }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 38 },
+      "id": 17, "title": "Total DB Connections",
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "sum(pg_stat_activity_count{job=\"postgres-exporter\"})", "legendFormat": "total" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 38 },
+      "id": 18, "title": "DB Size",
+      "options": { "legend": { "calcs": ["last"], "displayMode": "table", "placement": "bottom" } },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "pg_database_size_bytes{job=\"postgres-exporter\",datname=\"idpdb\"}", "legendFormat": "idpdb" }],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 },
+      "id": 19, "title": "DB Transactions / sec (commits + rollbacks)",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(pg_stat_database_xact_commit_total{job=\"postgres-exporter\",datname=\"idpdb\"}[1m])", "legendFormat": "commits/s" },
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(pg_stat_database_xact_rollback_total{job=\"postgres-exporter\",datname=\"idpdb\"}[1m])", "legendFormat": "rollbacks/s" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 46 },
+      "id": 20, "title": "Cache Hit Ratio",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "pg_stat_database_blks_hit_total{job=\"postgres-exporter\",datname=\"idpdb\"} / (pg_stat_database_blks_hit_total{job=\"postgres-exporter\",datname=\"idpdb\"} + pg_stat_database_blks_read_total{job=\"postgres-exporter\",datname=\"idpdb\"}) * 100", "legendFormat": "cache hit %" }
+      ],
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 54 },
+      "id": 104, "title": "⚡  Redis Cache", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 100 }] } }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 55 },
+      "id": 21, "title": "Connected Clients",
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "redis_connected_clients{job=\"redis-exporter\"}", "legendFormat": "clients" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "bytes",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 104857600 }, { "color": "red", "value": 524288000 }] } }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 55 },
+      "id": 22, "title": "Redis Memory Used",
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "redis_memory_used_bytes{job=\"redis-exporter\"}", "legendFormat": "used" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 55 },
+      "id": 23, "title": "Keyspace Keys",
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "targets": [{ "datasource": { "uid": "prometheus" }, "expr": "redis_db_keys{job=\"redis-exporter\"}", "legendFormat": "{{db}}" }],
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "iops", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 55 },
+      "id": 24, "title": "Redis Commands / sec",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(redis_commands_processed_total{job=\"redis-exporter\"}[1m])", "legendFormat": "commands/s" }
+      ],
+      "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 59 },
+      "id": 25, "title": "Redis Hit Rate",
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        { "datasource": { "uid": "prometheus" }, "expr": "rate(redis_keyspace_hits_total{job=\"redis-exporter\"}[1m]) / (rate(redis_keyspace_hits_total{job=\"redis-exporter\"}[1m]) + rate(redis_keyspace_misses_total{job=\"redis-exporter\"}[1m]))", "legendFormat": "hit rate" }
+      ],
+      "type": "timeseries"
+    }
+
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["mysterbox", "microservices"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MysteryBox – Microservices",
+  "uid": "mysterbox-main",
+  "version": 1
+}
