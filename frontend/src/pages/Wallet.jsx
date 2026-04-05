@@ -78,6 +78,7 @@ export default function Wallet() {
           <table>
             <thead>
               <tr>
+                <th>Date</th>
                 <th>Type</th>
                 <th>Amount</th>
                 <th>Box</th>
@@ -85,23 +86,27 @@ export default function Wallet() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((tx) => (
-                <tr key={tx.id}>
-                  <td>
-                    <span
-                      style={{
-                        color: tx.status === "deposit" ? "#86efac" : "#fca5a5",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {tx.status === "deposit" ? "+" : "-"}{tx.amount}
-                    </span>
-                  </td>
-                  <td>{tx.amount} coins</td>
-                  <td>{tx.box_name || "—"}</td>
-                  <td>{tx.item_name || "—"}</td>
-                </tr>
-              ))}
+              {transactions.map((tx) => {
+                const date = tx.created_at
+                  ? new Date(tx.created_at).toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short" })
+                  : "—";
+                const isDeposit = tx.status === "deposit";
+                return (
+                  <tr key={tx.id}>
+                    <td className="text-muted" style={{ whiteSpace: "nowrap" }}>{date}</td>
+                    <td>
+                      <span style={{ color: isDeposit ? "#86efac" : "#fca5a5", fontWeight: 600 }}>
+                        {isDeposit ? "▲ Deposit" : "▼ Purchase"}
+                      </span>
+                    </td>
+                    <td style={{ color: isDeposit ? "#86efac" : "#fca5a5", fontWeight: 600 }}>
+                      {isDeposit ? "+" : "-"}{tx.amount} coins
+                    </td>
+                    <td>{tx.box_name || "—"}</td>
+                    <td>{tx.item_name || "—"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

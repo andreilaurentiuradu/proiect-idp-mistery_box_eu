@@ -101,5 +101,5 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║   Clean complete. Slate is wiped. ✓  ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════╝${NC}"
 echo ""
-echo -e "  Run ${YELLOW}bash start.sh${NC} to rebuild and start fresh."
+echo -e "  Run ${YELLOW}bash run_app.sh${NC} to rebuild and start fresh."
 echo ""

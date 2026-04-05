@@ -1,28 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 
-const RARITY_STYLES = {
-  common:    { background: "#9e9e9e", color: "#fff" },
-  rare:      { background: "#1565c0", color: "#fff" },
-  epic:      { background: "#6a1b9a", color: "#fff" },
-  legendary: { background: "#f9a825", color: "#000" },
+function boxTier(cost) {
+  if (cost <= 100) return "starter";
+  if (cost <= 300) return "adventure";
+  if (cost <= 800) return "epic";
+  return "legendary";
+}
+function boxEmoji(cost) {
+  if (cost <= 100) return "📦";
+  if (cost <= 300) return "🎁";
+  if (cost <= 800) return "💎";
+  return "👑";
+}
+
+const ITEM_EMOJIS = {
+  common: "🔵", rare: "🟣", epic: "🌟", legendary: "✨",
 };
 
 function RarityBadge({ rarity }) {
-  const style = RARITY_STYLES[rarity] || RARITY_STYLES.common;
   return (
-    <span style={{
-      ...style,
-      padding: "0.15rem 0.45rem",
-      borderRadius: "999px",
-      fontSize: "0.68rem",
-      fontWeight: 600,
-      textTransform: "uppercase",
-      marginLeft: "0.4rem",
-      verticalAlign: "middle",
-    }}>
+    <span className={`rarity-badge rarity-${rarity}`}>
       {rarity === "legendary" ? `✨ ${rarity}` : rarity}
     </span>
   );
@@ -35,6 +35,7 @@ export default function BoxDetail() {
   const [box, setBox] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pulling, setPulling] = useState(false);
+  const [shaking, setShaking] = useState(false);
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
 
@@ -45,10 +46,14 @@ export default function BoxDetail() {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const handlePull = async (count = 1) => {
+  const handlePull = useCallback(async (count = 1) => {
+    if (pulling) return;
     setError("");
     setResults([]);
     setPulling(true);
+    setShaking(true);
+    setTimeout(() => setShaking(false), 600);
+
     try {
       if (count === 1) {
         const { data } = await api.post(`/api/boxes/${id}/pull`);
@@ -63,101 +68,133 @@ export default function BoxDetail() {
     } finally {
       setPulling(false);
     }
-  };
+  }, [id, pulling, refreshUser]);
 
   if (loading) return <div className="spinner" />;
   if (!box) return null;
 
+  const tier = boxTier(box.cost);
+  const emoji = boxEmoji(box.cost);
   const totalProb = box.items.reduce((s, i) => s + i.pull_probability, 0);
   const canAfford = (n) => (user?.deposit ?? 0) >= box.cost * n;
   const hasStock = box.items.length > 0;
+
+  const OPEN_BTNS = [
+    { n: 1,  cls: "open-btn-x1",  label: "Open ×1" },
+    { n: 3,  cls: "open-btn-x3",  label: "Open ×3" },
+    { n: 5,  cls: "open-btn-x5",  label: "Open ×5" },
+    { n: 10, cls: "open-btn-x10", label: "Open ×10" },
+  ];
 
   return (
     <div className="page">
       <button className="btn btn-secondary btn-sm mb-2" onClick={() => navigate("/")}>
         ← Back
       </button>
-      <h1>{box.name}</h1>
-      {box.description && <p className="text-muted mb-2">{box.description}</p>}
 
-      <div className="flex items-center gap-2 mb-2">
-        <span>Cost: <strong style={{ color: "#a78bfa" }}>{box.cost} coins</strong></span>
-        <span className="text-muted">|</span>
-        <span>Your balance: <strong>{user?.deposit ?? "…"} coins</strong></span>
+      {/* Hero section */}
+      <div className={`tier-${tier}`}>
+        <div className="box-detail-hero">
+          {/* Animated box */}
+          <div
+            className={`box-visual${shaking ? " is-opening" : ""}`}
+            onClick={() => canAfford(1) && hasStock && handlePull(1)}
+            title="Click to open!"
+          >
+            {emoji}
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            <div className="box-detail-title">{box.name}</div>
+            {box.description && <div className="box-detail-desc mt-1">{box.description}</div>}
+          </div>
+
+          <div className="box-detail-meta">
+            <span>Cost: <strong style={{ color: "#a78bfa" }}>{box.cost} coins</strong></span>
+            <span style={{ color: "#333" }}>|</span>
+            <span>Balance: <strong style={{ color: "#86efac" }}>{user?.deposit ?? "…"} coins</strong></span>
+          </div>
+
+          {/* Open buttons */}
+          <div className="open-btns">
+            {OPEN_BTNS.map(({ n, cls, label }) => (
+              <button
+                key={n}
+                className={`open-btn ${cls}`}
+                onClick={() => handlePull(n)}
+                disabled={pulling || !canAfford(n) || !hasStock}
+              >
+                <span className="open-count">{pulling && n === 1 ? "🎲" : label}</span>
+                <span className="open-cost">{box.cost * n} coins</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
+      {/* Error */}
       {error && <div className="alert alert-error">{error}</div>}
 
+      {/* Results */}
       {results.length > 0 && (
-        <div className="alert alert-success">
-          🎉 {results.length === 1 ? (
-            <>You got: <strong>{results[0].name}</strong> ({results[0].points} pts)</>
-          ) : (
-            <>
-              You got {results.length} items:
-              <ul style={{ margin: "0.5rem 0 0 1.2rem" }}>
-                {results.map((item, i) => (
-                  <li key={i}><strong>{item.name}</strong> ({item.points} pts)</li>
-                ))}
-              </ul>
-            </>
-          )}
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ textAlign: "center", marginBottom: "1rem" }}>
+            🎉 {results.length === 1 ? "You got!" : `You got ${results.length} items!`}
+          </h2>
+          <div className="results-grid">
+            {results.map((item, i) => (
+              <div
+                key={i}
+                className={`result-card rarity-${item.rarity || "common"}`}
+                style={{ animationDelay: `${i * 0.07}s` }}
+              >
+                <div className="rc-emoji">{ITEM_EMOJIS[item.rarity] || "🔵"}</div>
+                {item.rarity && (
+                  <div style={{ marginBottom: "0.35rem" }}>
+                    <RarityBadge rarity={item.rarity} />
+                  </div>
+                )}
+                <div className="rc-name">{item.name}</div>
+                {item.description && (
+                  <div style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.2rem", marginBottom: "0.3rem" }}>
+                    {item.description}
+                  </div>
+                )}
+                <div className="rc-points">✦ {item.points} pts</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="flex gap-1 mb-2 wrap">
-        {[1, 3, 5, 10].map((n) => (
-          <button
-            key={n}
-            className={n === 1 ? "btn btn-primary" : "btn btn-secondary"}
-            onClick={() => handlePull(n)}
-            disabled={pulling || !canAfford(n) || !hasStock}
-          >
-            {pulling ? "Opening…" : `Open ×${n} (${box.cost * n} coins)`}
-          </button>
-        ))}
-      </div>
-
-      <h2>Contents</h2>
+      {/* Contents */}
+      <h2>Box Contents</h2>
       {box.items.length === 0 ? (
         <p className="text-muted">This box is empty.</p>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Description</th>
-                <th>Points</th>
-                <th>Stock</th>
-                <th>Probability</th>
-              </tr>
-            </thead>
-            <tbody>
-              {box.items.map((item) => {
-                const pct = totalProb > 0 ? ((item.pull_probability / totalProb) * 100).toFixed(1) : 0;
-                return (
-                  <tr key={item.id}>
-                    <td>
-                      <strong>{item.item_name}</strong>
-                      {item.rarity && <RarityBadge rarity={item.rarity} />}
-                    </td>
-                    <td className="text-muted">{item.description || "—"}</td>
-                    <td>{item.points}</td>
-                    <td>{item.stock}</td>
-                    <td>
-                      <div className="flex items-center gap-1">
-                        <div className="prob-bar-bg">
-                          <div className="prob-bar" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}>{pct}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="contents-grid">
+          {box.items.map((item) => {
+            const pct = totalProb > 0 ? ((item.pull_probability / totalProb) * 100).toFixed(1) : 0;
+            return (
+              <div key={item.id} className="content-item-card">
+                <div className="ci-header">
+                  <span className="ci-name">{item.item_name}</span>
+                  {item.rarity && <RarityBadge rarity={item.rarity} />}
+                </div>
+                <div className="ci-desc">{item.description || "No description"}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem" }}>
+                  <div className="prob-bar-bg" style={{ flex: 1 }}>
+                    <div className="prob-bar" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span style={{ fontSize: "0.75rem", color: "#888", whiteSpace: "nowrap" }}>{pct}%</span>
+                </div>
+                <div className="ci-footer">
+                  <span className="ci-pts">✦ {item.points} pts</span>
+                  <span className="ci-stock">📦 stock: {item.stock}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -104,17 +104,23 @@ def transactions():
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT o.id, o.amount, o.status,
+                SELECT o.id, o.amount, o.status, o.created_at,
                        b.name AS box_name, i.name AS item_name
                 FROM "order" o
                 LEFT JOIN box b ON b.id = o.box_id
                 LEFT JOIN item i ON i.id = o.item_id
                 WHERE o.user_id = %s
-                ORDER BY o.id DESC
+                ORDER BY o.created_at DESC
                 """,
                 (user["user_id"],),
             )
-            return jsonify([dict(r) for r in cur.fetchall()])
+            rows = []
+            for r in cur.fetchall():
+                d = dict(r)
+                if d.get("created_at"):
+                    d["created_at"] = d["created_at"].isoformat()
+                rows.append(d)
+            return jsonify(rows)
     finally:
         conn.close()
 

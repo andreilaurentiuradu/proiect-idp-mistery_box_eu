@@ -15,7 +15,7 @@ services:
       POSTGRES_DB: idpdb
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./init-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U idp -d idpdb"]
       interval: 5s
@@ -24,7 +24,7 @@ services:
     networks:
       - backend
 
-  # ── PostgreSQL Exporter (metrics for Prometheus) ────────────────────────────
+  # ── PostgreSQL Exporter ─────────────────────────────────────────────────────
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     environment:
@@ -50,7 +50,7 @@ services:
 
   # ── Auth Service ────────────────────────────────────────────────────────────
   auth-service:
-    build: ./auth-service
+    build: ./auth_service
     environment:
       <<: *db-env
     depends_on:
@@ -70,7 +70,7 @@ services:
       timeout: 3s
       retries: 5
 
-  # ── Redis Exporter (metrics for Prometheus) ─────────────────────────────────
+  # ── Redis Exporter ──────────────────────────────────────────────────────────
   redis-exporter:
     image: oliver006/redis_exporter:latest
     environment:
@@ -81,9 +81,9 @@ services:
     networks:
       - backend
 
-  # ── Business Logic Service ──────────────────────────────────────────────────
+  # ── Business Service ────────────────────────────────────────────────────────
   business-service:
-    build: ./business-service
+    build: ./backend
     environment:
       <<: *db-env
       REDIS_URL: redis://redis:6379
@@ -97,7 +97,7 @@ services:
 
   # ── Payments Service ────────────────────────────────────────────────────────
   payments-service:
-    build: ./payments-service
+    build: ./payment_service
     environment:
       <<: *db-env
     depends_on:
@@ -121,8 +121,8 @@ services:
     volumes:
       - ./kong/kong.yml:/etc/kong/kong.yml:ro
     ports:
-      - "8000:8000"   # proxy (all client traffic goes here)
-      - "8001:8001"   # admin API
+      - "8000:8000"
+      - "8001:8001"
     depends_on:
       - auth-service
       - business-service
@@ -160,7 +160,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
     depends_on:
@@ -182,8 +182,8 @@ services:
       - "3001:3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
     networks:

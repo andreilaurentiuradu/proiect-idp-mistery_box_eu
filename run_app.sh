@@ -63,7 +63,7 @@ migrate_db() {
 
 # ── Seed mock data ─────────────────────────────────────────────────────────────
 seed_db() {
-  local seed_file="$SCRIPT_DIR/database/seed.sql"
+  local seed_file="$SCRIPT_DIR/init-db/seed.sql"
   if [ ! -f "$seed_file" ]; then
     warn "seed.sql not found – skipping seed."
     return
