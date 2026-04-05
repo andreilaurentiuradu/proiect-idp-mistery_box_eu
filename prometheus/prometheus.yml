@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: auth-service
+    static_configs:
+      - targets: ["auth-service:5001"]
+    metrics_path: /metrics
+
+  - job_name: business-service
+    static_configs:
+      - targets: ["business-service:5002"]
+    metrics_path: /metrics
+
+  - job_name: payments-service
+    static_configs:
+      - targets: ["payments-service:5003"]
+    metrics_path: /metrics

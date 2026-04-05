@@ -1,0 +1,50 @@
+_format_version: "2.1"
+_transform: true
+
+# One consumer represents our application – all issued JWTs share this credential
+consumers:
+  - username: mystery-box-app
+    jwt_secrets:
+      - algorithm: HS256
+        key: mystery-box-app          # must match `iss` claim in tokens
+        secret: mysecretkey123        # must match JWT_SECRET env var
+
+services:
+  # ── Auth service – public routes (no JWT required) ─────────────────────────
+  - name: auth-service
+    url: http://auth-service:5001
+    routes:
+      - name: auth-routes
+        paths:
+          - /auth
+        strip_path: false
+
+  # ── Business logic – JWT protected ─────────────────────────────────────────
+  - name: business-service
+    url: http://business-service:5002
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+    routes:
+      - name: business-routes
+        paths:
+          - /api
+        strip_path: false
+
+  # ── Payments – JWT protected ────────────────────────────────────────────────
+  - name: payments-service
+    url: http://payments-service:5003
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+    routes:
+      - name: payments-routes
+        paths:
+          - /payments
+        strip_path: false
